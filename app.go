@@ -94,6 +94,9 @@ type Result struct {
 	CurrentVersion  string
 	ServiceManager  string
 	BackupPath      string
+	BinaryMatches   bool
+	ServiceRunning  bool
+	ServiceEnabled  bool
 	Message         string
 }
 
@@ -104,6 +107,12 @@ var (
 	ErrSameVersion = errors.New("the same version is already installed; use --repair to repair the installation")
 	// ErrDowngradeBlocked indicates that an older version was supplied without opt-in.
 	ErrDowngradeBlocked = errors.New("downgrade is blocked by policy")
+	// ErrAdministratorRequired indicates that a mutating lifecycle operation needs system privileges.
+	ErrAdministratorRequired = errors.New("administrator privileges are required for this lifecycle operation")
+	// ErrPathConflict indicates that a fresh install would overwrite an unmanaged path.
+	ErrPathConflict = errors.New("installation path is already occupied by an unmanaged file")
+	// ErrRepairVersionMismatch indicates that repair was requested with a different application version.
+	ErrRepairVersionMismatch = errors.New("repair must use the installed version; use --install to change versions")
 )
 
 // Validate checks the portable parts of an application specification.

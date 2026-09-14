@@ -1,6 +1,7 @@
 package svcforge
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ type Manifest struct {
 	Name           string    `json:"name"`
 	Version        string    `json:"version,omitempty"`
 	BinaryPath     string    `json:"binary_path"`
+	BinarySHA256   string    `json:"binary_sha256,omitempty"`
 	ServiceManager string    `json:"service_manager,omitempty"`
 	ServiceName    string    `json:"service_name,omitempty"`
 	InstalledAt    time.Time `json:"installed_at"`
@@ -110,8 +112,29 @@ func (m Manifest) Validate() error {
 			return fmt.Errorf("manifest version: %w", err)
 		}
 	}
+	if m.BinarySHA256 != "" {
+		if len(m.BinarySHA256) != 64 {
+			return errors.New("manifest binary SHA-256 is invalid")
+		}
+		if _, err := hex.DecodeString(m.BinarySHA256); err != nil {
+			return errors.New("manifest binary SHA-256 is invalid")
+		}
+	}
 	if m.BinaryPath == "" || !filepath.IsAbs(m.BinaryPath) {
 		return errors.New("manifest binary path must be absolute")
+	}
+	if (m.ServiceManager == "") != (m.ServiceName == "") {
+		return errors.New("manifest service manager and service name must be set together")
+	}
+	if m.ServiceManager != "" {
+		switch ServiceManager(m.ServiceManager) {
+		case ServiceManagerSystemd, ServiceManagerOpenRC, ServiceManagerWindows:
+		default:
+			return fmt.Errorf("manifest service manager %q is unsupported", m.ServiceManager)
+		}
+		if !identifierPattern.MatchString(m.ServiceName) {
+			return errors.New("manifest service name is invalid")
+		}
 	}
 	if m.InstalledAt.IsZero() || m.UpdatedAt.IsZero() {
 		return errors.New("manifest timestamps are required")

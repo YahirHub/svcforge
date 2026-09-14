@@ -190,6 +190,27 @@ func renderOpenRCScript(app App) ([]byte, error) {
 	return []byte(b.String()), nil
 }
 
+func serviceDefinitionPathLinux(app App, manager ServiceManager, layout linuxServiceLayout) (string, error) {
+	switch manager {
+	case ServiceManagerSystemd:
+		return filepath.Join(layout.systemdUnitDir, systemdUnitName(app.serviceName())), nil
+	case ServiceManagerOpenRC:
+		return filepath.Join(layout.openRCInitDir, app.serviceName()), nil
+	default:
+		return "", fmt.Errorf("unsupported Linux service manager %q", manager)
+	}
+}
+
+func reloadServiceManagerLinux(manager ServiceManager) error {
+	if manager == ServiceManagerSystemd {
+		return runServiceCommand("systemctl", "daemon-reload")
+	}
+	if manager == ServiceManagerOpenRC {
+		return nil
+	}
+	return fmt.Errorf("unsupported Linux service manager %q", manager)
+}
+
 func installServiceDefinitionLinux(app App, manager ServiceManager, layout linuxServiceLayout) (string, error) {
 	var (
 		path string
@@ -197,17 +218,17 @@ func installServiceDefinitionLinux(app App, manager ServiceManager, layout linux
 		mode os.FileMode
 		err  error
 	)
+	path, err = serviceDefinitionPathLinux(app, manager, layout)
+	if err != nil {
+		return "", err
+	}
 	switch manager {
 	case ServiceManagerSystemd:
-		path = filepath.Join(layout.systemdUnitDir, systemdUnitName(app.serviceName()))
 		data, err = renderSystemdUnit(app)
 		mode = 0o644
 	case ServiceManagerOpenRC:
-		path = filepath.Join(layout.openRCInitDir, app.serviceName())
 		data, err = renderOpenRCScript(app)
 		mode = 0o755
-	default:
-		return "", fmt.Errorf("unsupported Linux service manager %q", manager)
 	}
 	if err != nil {
 		return "", err
@@ -215,31 +236,21 @@ func installServiceDefinitionLinux(app App, manager ServiceManager, layout linux
 	if err := writeFileAtomic(path, data, mode); err != nil {
 		return "", err
 	}
-	if manager == ServiceManagerSystemd {
-		if err := runServiceCommand("systemctl", "daemon-reload"); err != nil {
-			return "", err
-		}
+	if err := reloadServiceManagerLinux(manager); err != nil {
+		return "", err
 	}
 	return path, nil
 }
 
 func removeServiceDefinitionLinux(app App, manager ServiceManager, layout linuxServiceLayout) error {
-	var path string
-	switch manager {
-	case ServiceManagerSystemd:
-		path = filepath.Join(layout.systemdUnitDir, systemdUnitName(app.serviceName()))
-	case ServiceManagerOpenRC:
-		path = filepath.Join(layout.openRCInitDir, app.serviceName())
-	default:
-		return fmt.Errorf("unsupported Linux service manager %q", manager)
+	path, err := serviceDefinitionPathLinux(app, manager, layout)
+	if err != nil {
+		return err
 	}
 	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("remove service definition %s: %w", path, err)
 	}
-	if manager == ServiceManagerSystemd {
-		return runServiceCommand("systemctl", "daemon-reload")
-	}
-	return nil
+	return reloadServiceManagerLinux(manager)
 }
 
 func enableServiceLinux(app App, manager ServiceManager) error {

@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 func writeFileAtomic(path string, data []byte, mode fs.FileMode) error {
@@ -40,5 +41,20 @@ func writeFileAtomic(path string, data []byte, mode fs.FileMode) error {
 		return fmt.Errorf("publish %s: %w", path, err)
 	}
 	removeTemp = false
+	if err := syncDirectory(dir); err != nil {
+		return fmt.Errorf("sync directory %s: %w", dir, err)
+	}
 	return nil
+}
+
+func syncDirectory(path string) error {
+	if runtime.GOOS == "windows" {
+		return nil
+	}
+	dir, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	return dir.Sync()
 }
