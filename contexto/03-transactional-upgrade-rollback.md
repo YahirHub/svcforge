@@ -64,3 +64,6 @@ Real service-manager integration in Dex-srvforge and Windows support.
 
 # Next steps
 Integrate Dex-srvforge with SvcForge, then perform real OpenRC install/repair/upgrade/remove tests on DexOS.
+
+## Transaction hook added for integrations
+`LifecycleHooks.BeforeMutation` runs only after install/upgrade/repair has been decided and after the rollback snapshot exists. It is skipped for same-version `--install`. This lets applications create or migrate their own configuration inside the transaction so a later failure restores the previous state.

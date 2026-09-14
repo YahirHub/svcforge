@@ -26,6 +26,7 @@ type App struct {
 	Executable  Executable
 	Service     Service
 	Upgrade     UpgradePolicy
+	Hooks       LifecycleHooks
 }
 
 // Executable describes the installed application binary.
@@ -66,6 +67,12 @@ type UpgradePolicy struct {
 
 // HealthCheck describes optional post-start validation.
 // Check takes precedence over URL when both are supplied.
+// LifecycleHooks allows an application to mutate its own persistent state inside the SvcForge transaction.
+// BeforeMutation runs after the rollback snapshot is complete and before managed files are replaced.
+type LifecycleHooks struct {
+	BeforeMutation func(context.Context, Operation) error
+}
+
 type HealthCheck struct {
 	Check          func(context.Context) error
 	URL            string

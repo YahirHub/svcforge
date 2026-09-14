@@ -334,3 +334,48 @@ func assertFileContent(t *testing.T, path, want string) {
 		t.Fatalf("%s content = %q, want %q", path, got, want)
 	}
 }
+
+func TestBeforeMutationHookIsSkippedForSameVersionAndRollbackCovered(t *testing.T) {
+	runner, _, _, dataPath := transactionTestRunner(t, "1.0.0", "binary-v1")
+	if err := os.MkdirAll(filepath.Dir(dataPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(dataPath, []byte("before"), 0o640); err != nil {
+		t.Fatal(err)
+	}
+	runner.App.Upgrade.BackupTargets = []BackupTarget{{Path: dataPath}}
+	calls := 0
+	runner.App.Hooks.BeforeMutation = func(context.Context, Operation) error {
+		calls++
+		return os.WriteFile(dataPath, []byte("installed"), 0o640)
+	}
+	if _, err := executeTransactionForTest(t, runner, OperationInstall); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Fatalf("hook calls after install = %d", calls)
+	}
+	if _, err := executeTransactionForTest(t, runner, OperationInstall); !errors.Is(err, ErrSameVersion) {
+		t.Fatalf("same version error = %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("same-version install unexpectedly ran hook; calls=%d", calls)
+	}
+
+	repairSource := filepath.Join(filepath.Dir(runner.Options.SourcePath), "repair-hook.bin")
+	if err := os.WriteFile(repairSource, []byte("binary-v1-repair"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	repair := runner
+	repair.Options.SourcePath = repairSource
+	repair.App.Hooks.BeforeMutation = func(context.Context, Operation) error {
+		if err := os.WriteFile(dataPath, []byte("hook-corruption"), 0o600); err != nil {
+			return err
+		}
+		return errors.New("hook failed")
+	}
+	if _, err := executeTransactionForTest(t, repair, OperationRepair); err == nil || !strings.Contains(err.Error(), "before-mutation hook") {
+		t.Fatalf("hook failure error = %v", err)
+	}
+	assertFileContent(t, dataPath, "installed")
+}

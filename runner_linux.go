@@ -189,6 +189,16 @@ func (r Runner) installOrRepairLinux(ctx context.Context, app App, paths resolve
 	}
 
 	mutated := false
+	if app.Hooks.BeforeMutation != nil {
+		mutated = true
+		if hookErr := app.Hooks.BeforeMutation(ctx, actualOperation); hookErr != nil {
+			rollbackErr := rollbackLinux(app, newManager, oldApp, oldManager, oldState, snapshot)
+			if rollbackErr != nil {
+				return result, errors.Join(fmt.Errorf("before-mutation hook: %w", hookErr), fmt.Errorf("rollback failed: %w", rollbackErr))
+			}
+			return result, fmt.Errorf("before-mutation hook: %w", hookErr)
+		}
+	}
 	fail := func(cause error) (Result, error) {
 		if !mutated {
 			return result, cause
