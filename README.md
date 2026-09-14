@@ -41,3 +41,7 @@ SvcForge is under active development. `/root/Dex-srvforge` is the integration la
 ## Linux service managers
 
 SvcForge detects the active manager instead of branching on distribution names. The current Linux backend supports systemd and OpenRC using their native management commands. Generated definitions are written atomically, and service commands are executed as direct argv calls rather than through a shell.
+
+## Real integration validation
+
+SvcForge has been validated on DexOS/OpenRC using the isolated Dex-srvforge application. The test covered fresh installation, same-version detection, repair, binary-integrity repair, upgrade, forced-health-check rollback, self-removal from the installed executable, persistent configuration preservation, reinstall and backup retention.

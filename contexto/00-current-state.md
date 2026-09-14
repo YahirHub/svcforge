@@ -46,3 +46,4 @@ Implement task 01: core types, validation, version comparison and install manife
 Task 01 completed: the portable core now has validated app specifications, optional SemVer ordering, install decisions and atomic manifests. Task 02 is active for Linux systemd/OpenRC lifecycle and privilege escalation.
 Task 02 completed: Linux now has systemd/OpenRC detection, safe definition rendering/actions and privilege re-exec. Task 03 is active for transactional binary replacement, backup, health checking and rollback.
 Task 03 completed: Linux lifecycle transactions now include locking, snapshots, integrity, health checks and rollback. Task 04 is active for the Dex-srvforge OpenRC integration laboratory.
+Task 04 completed: Dex-srvforge passed real OpenRC fresh install, same-version, repair, upgrade, forced rollback, self-remove and reinstall tests. Windows service support remains the next major platform task.
