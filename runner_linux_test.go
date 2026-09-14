@@ -379,3 +379,23 @@ func TestBeforeMutationHookIsSkippedForSameVersionAndRollbackCovered(t *testing.
 	}
 	assertFileContent(t, dataPath, "installed")
 }
+
+func TestFreshInstallHookFailureRestoresOptionalPersistentTarget(t *testing.T) {
+	runner, _, _, dataPath := transactionTestRunner(t, "1.0.0", "binary-v1")
+	runner.App.Upgrade.BackupTargets = []BackupTarget{{Path: dataPath, Optional: true}}
+	runner.App.Hooks.BeforeMutation = func(context.Context, Operation) error {
+		if err := os.MkdirAll(filepath.Dir(dataPath), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(dataPath, []byte("created-by-hook"), 0o600); err != nil {
+			return err
+		}
+		return errors.New("stop fresh install")
+	}
+	if _, err := executeTransactionForTest(t, runner, OperationInstall); err == nil {
+		t.Fatal("expected hook failure")
+	}
+	if _, err := os.Stat(dataPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("fresh hook-created target should be rolled back, stat err=%v", err)
+	}
+}

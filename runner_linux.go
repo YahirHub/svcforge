@@ -174,7 +174,7 @@ func (r Runner) installOrRepairLinux(ctx context.Context, app App, paths resolve
 		}
 	}
 
-	sources := transactionSnapshotSources(app, paths, installed, oldDefinition, newDefinition)
+	sources := transactionSnapshotSources(app, paths, oldDefinition, newDefinition)
 	snapshot, err := createBackupSnapshot(paths.backupRoot, time.Now().UTC(), sources)
 	if err != nil {
 		if installed && oldManager != "" && oldState.Running {
@@ -510,17 +510,15 @@ func validateBackupTargetsLinux(app App, paths resolvedPaths, serviceDefinitions
 	return nil
 }
 
-func transactionSnapshotSources(app App, paths resolvedPaths, installed bool, serviceDefinitions ...string) []snapshotSource {
+func transactionSnapshotSources(app App, paths resolvedPaths, serviceDefinitions ...string) []snapshotSource {
 	sources := []snapshotSource{{Path: paths.installPath, Optional: true}}
 	for _, definition := range serviceDefinitions {
 		if definition != "" {
 			sources = append(sources, snapshotSource{Path: definition, Optional: true})
 		}
 	}
-	if installed {
-		for _, target := range app.Upgrade.BackupTargets {
-			sources = append(sources, snapshotSource{Path: target.Path, Optional: target.Optional})
-		}
+	for _, target := range app.Upgrade.BackupTargets {
+		sources = append(sources, snapshotSource{Path: target.Path, Optional: target.Optional})
 	}
 	return dedupeSnapshotSources(sources)
 }
