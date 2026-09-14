@@ -45,6 +45,9 @@ type Service struct {
 	User             string
 	Group            string
 	AutoStart        bool
+	Restart          RestartPolicy
+	DependOnNetwork  bool
+	LogPath          string
 }
 
 // BackupTarget describes persistent state that must be copied before an upgrade.
@@ -117,13 +120,16 @@ func (a App) Validate() error {
 	if strings.ContainsAny(a.DisplayName, "\r\n\x00") {
 		return errors.New("display name contains an invalid control character")
 	}
-	if strings.ContainsAny(a.Description, "\x00") {
-		return errors.New("description contains a NUL character")
+	if strings.ContainsAny(a.Description, "\r\n\x00") {
+		return errors.New("description contains an invalid control character")
 	}
 	if a.Version != "" {
 		if _, err := ParseVersion(a.Version); err != nil {
 			return fmt.Errorf("invalid version: %w", err)
 		}
+	}
+	if strings.ContainsAny(a.Executable.InstallPath, "\r\n\x00") {
+		return errors.New("executable install path contains an invalid control character")
 	}
 	if a.Executable.InstallPath != "" && !filepath.IsAbs(a.Executable.InstallPath) {
 		return errors.New("executable install path must be absolute")
@@ -142,8 +148,31 @@ func (a App) Validate() error {
 		if strings.ContainsAny(a.Service.Description, "\r\n\x00") {
 			return errors.New("service description contains an invalid control character")
 		}
+		for _, arg := range a.Service.Arguments {
+			if strings.ContainsAny(arg, "\r\n\x00") {
+				return errors.New("service argument contains an invalid control character")
+			}
+		}
+		if a.Service.User != "" && !identifierPattern.MatchString(a.Service.User) {
+			return fmt.Errorf("invalid service user %q", a.Service.User)
+		}
+		if a.Service.Group != "" && !identifierPattern.MatchString(a.Service.Group) {
+			return fmt.Errorf("invalid service group %q", a.Service.Group)
+		}
+		if strings.ContainsAny(a.Service.WorkingDirectory, "\r\n\x00") {
+			return errors.New("service working directory contains an invalid control character")
+		}
 		if a.Service.WorkingDirectory != "" && !filepath.IsAbs(a.Service.WorkingDirectory) {
 			return errors.New("service working directory must be absolute")
+		}
+		if a.Service.Restart != "" && a.Service.Restart != RestartNever && a.Service.Restart != RestartOnFailure && a.Service.Restart != RestartAlways {
+			return fmt.Errorf("invalid restart policy %q", a.Service.Restart)
+		}
+		if strings.ContainsAny(a.Service.LogPath, "\r\n\x00") {
+			return errors.New("service log path contains an invalid control character")
+		}
+		if a.Service.LogPath != "" && !filepath.IsAbs(a.Service.LogPath) {
+			return errors.New("service log path must be absolute")
 		}
 		for key, value := range a.Service.Environment {
 			if err := validateEnvironment(key, value); err != nil {
@@ -155,6 +184,9 @@ func (a App) Validate() error {
 		return errors.New("keep backups cannot be negative")
 	}
 	for _, target := range a.Upgrade.BackupTargets {
+		if strings.ContainsAny(target.Path, "\r\n\x00") {
+			return fmt.Errorf("backup target %q contains an invalid control character", target.Path)
+		}
 		if target.Path == "" || !filepath.IsAbs(target.Path) {
 			return fmt.Errorf("backup target %q must be an absolute path", target.Path)
 		}

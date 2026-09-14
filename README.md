@@ -37,3 +37,7 @@ Versioning is optional. When both the installed manifest and the current applica
 ## Development status
 
 SvcForge is under active development. `/root/Dex-srvforge` is the integration laboratory used to validate lifecycle behavior against a real service application without modifying the main Dex repository.
+
+## Linux service managers
+
+SvcForge detects the active manager instead of branching on distribution names. The current Linux backend supports systemd and OpenRC using their native management commands. Generated definitions are written atomically, and service commands are executed as direct argv calls rather than through a shell.

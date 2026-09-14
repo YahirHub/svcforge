@@ -44,3 +44,4 @@ Implement task 01: core types, validation, version comparison and install manife
 
 ## Progress — 2026-09-14
 Task 01 completed: the portable core now has validated app specifications, optional SemVer ordering, install decisions and atomic manifests. Task 02 is active for Linux systemd/OpenRC lifecycle and privilege escalation.
+Task 02 completed: Linux now has systemd/OpenRC detection, safe definition rendering/actions and privilege re-exec. Task 03 is active for transactional binary replacement, backup, health checking and rollback.

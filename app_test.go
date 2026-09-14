@@ -74,3 +74,27 @@ func TestDecideInstall(t *testing.T) {
 		t.Fatalf("allowed downgrade: %v", err)
 	}
 }
+
+func TestAppValidateRejectsServiceDefinitionControlCharacters(t *testing.T) {
+	base := validApp(t)
+	base.Service.Enabled = true
+
+	cases := []struct {
+		name   string
+		mutate func(*App)
+	}{
+		{"description newline", func(app *App) { app.Description = "bad\ndescription" }},
+		{"argument newline", func(app *App) { app.Service.Arguments = []string{"serve\nnope"} }},
+		{"user delimiter", func(app *App) { app.Service.User = "root:wheel" }},
+		{"working directory newline", func(app *App) { app.Service.WorkingDirectory = "/tmp/bad\ndir" }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			app := base
+			tc.mutate(&app)
+			if err := app.Validate(); err == nil {
+				t.Fatal("expected validation error")
+			}
+		})
+	}
+}
