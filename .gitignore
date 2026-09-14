@@ -1,0 +1,23 @@
+# Build outputs
+bin/
+dist/
+build/
+*.exe
+*.test
+*.out
+coverage.*
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local test artifacts
+.tmp/
+tmp/
