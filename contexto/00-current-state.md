@@ -41,3 +41,6 @@ Core API, manifest/version logic, Linux service managers, transactional upgrade/
 
 # Next steps
 Implement task 01: core types, validation, version comparison and install manifest format using only the Go standard library.
+
+## Progress — 2026-09-14
+Task 01 completed: the portable core now has validated app specifications, optional SemVer ordering, install decisions and atomic manifests. Task 02 is active for Linux systemd/OpenRC lifecycle and privilege escalation.
