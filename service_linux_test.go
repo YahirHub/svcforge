@@ -45,12 +45,53 @@ func TestRenderSystemdUnit(t *testing.T) {
 		`ExecStart="/opt/demo/bin/demo" "serve" "--label" "hello world" "--literal=$$VALUE%%"`,
 		`Environment="DEMO_MODE=production"`,
 		`Environment="QUOTE=a\"b"`,
+		"WorkingDirectory=/var/lib/demo",
 		"Restart=on-failure",
 		"WantedBy=multi-user.target",
 	} {
 		if !strings.Contains(text, marker) {
 			t.Fatalf("systemd unit missing %q:\n%s", marker, text)
 		}
+	}
+	if strings.Contains(text, `WorkingDirectory="/var/lib/demo"`) {
+		t.Fatalf("WorkingDirectory must use path syntax, not command argument quoting:\n%s", text)
+	}
+}
+
+func TestRenderSystemdWorkingDirectoryEscapesSpecifiers(t *testing.T) {
+	app := linuxServiceApp(t)
+	app.Service.WorkingDirectory = "/var/lib/demo%cache"
+	unit, err := renderSystemdUnit(app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(unit), "WorkingDirectory=/var/lib/demo%%cache\n") {
+		t.Fatalf("WorkingDirectory percent must be escaped as a literal systemd specifier:\n%s", unit)
+	}
+}
+
+func TestRenderedSystemdUnitPassesSystemdAnalyzeWhenAvailable(t *testing.T) {
+	tool, err := exec.LookPath("systemd-analyze")
+	if err != nil {
+		t.Skip("systemd-analyze is not installed on this test host")
+	}
+	root := t.TempDir()
+	executable := filepath.Join(root, "demo")
+	writeExecutable(t, executable, "#!/bin/sh\nexit 0\n")
+	app := linuxServiceApp(t)
+	app.Executable.InstallPath = executable
+	app.Service.WorkingDirectory = root
+	unit, err := renderSystemdUnit(app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unitPath := filepath.Join(root, "demo.service")
+	if err := os.WriteFile(unitPath, unit, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	output, err := exec.Command(tool, "verify", unitPath).CombinedOutput()
+	if err != nil {
+		t.Fatalf("systemd-analyze verify failed: %v\n%s\nunit:\n%s", err, output, unit)
 	}
 }
 

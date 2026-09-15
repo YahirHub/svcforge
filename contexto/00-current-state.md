@@ -47,3 +47,4 @@ Task 01 completed: the portable core now has validated app specifications, optio
 Task 02 completed: Linux now has systemd/OpenRC detection, safe definition rendering/actions and privilege re-exec. Task 03 is active for transactional binary replacement, backup, health checking and rollback.
 Task 03 completed: Linux lifecycle transactions now include locking, snapshots, integrity, health checks and rollback. Task 04 is active for the Dex-srvforge OpenRC integration laboratory.
 Task 04 completed: Dex-srvforge passed real OpenRC fresh install, same-version, repair, upgrade, forced rollback, self-remove and reinstall tests. Windows service support remains the next major platform task.
+Task 07 completed: systemd `WorkingDirectory=` rendering now uses path-directive syntax instead of command-argument quoting, fixing `bad-setting` units observed on Debian 13. Dex should consume the new SvcForge revision instead of carrying a local workaround.

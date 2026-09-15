@@ -79,7 +79,7 @@ func renderSystemdUnit(app App) ([]byte, error) {
 	b.WriteByte('\n')
 	if app.Service.WorkingDirectory != "" {
 		b.WriteString("WorkingDirectory=")
-		b.WriteString(systemdCommandArg(app.Service.WorkingDirectory))
+		b.WriteString(systemdText(app.Service.WorkingDirectory))
 		b.WriteByte('\n')
 	}
 	if app.Service.User != "" {

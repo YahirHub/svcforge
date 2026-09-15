@@ -38,8 +38,10 @@ Go standard library only. Platform behavior follows native systemd/OpenRC tools 
 # Solutions implemented
 - Strict control-character/path/environment validation.
 - Dedicated systemd escaping and POSIX shell quoting.
+- `WorkingDirectory=` is rendered as a systemd path directive rather than as a quoted command argument; this fixes Debian 13 `bad-setting` units while preserving literal `%` with `%%`.
 - Deterministic environment ordering for reproducible definitions.
 - OpenRC script syntax smoke via `/bin/sh -n`.
+- Optional `systemd-analyze verify` smoke when available on the test host.
 - Atomic service-definition writes with correct 0644/0755 modes.
 - Host smoke confirms manager detection returns `openrc` on DexOS.
 

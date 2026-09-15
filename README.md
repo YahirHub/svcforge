@@ -40,7 +40,7 @@ SvcForge is under active development. `/root/Dex-srvforge` is the integration la
 
 ## Linux service managers
 
-SvcForge detects the active manager instead of branching on distribution names. The current Linux backend supports systemd and OpenRC using their native management commands. Generated definitions are written atomically, and service commands are executed as direct argv calls rather than through a shell.
+SvcForge detects the active manager instead of branching on distribution names. The current Linux backend supports systemd and OpenRC using their native management commands. Generated definitions are written atomically, and service commands are executed as direct argv calls rather than through a shell. systemd path directives such as `WorkingDirectory=` are rendered with path syntax rather than command-argument quoting, including compatibility with Debian 13/systemd.
 
 ## Real integration validation
 
